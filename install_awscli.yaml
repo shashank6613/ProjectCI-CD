@@ -1,0 +1,26 @@
+---
+- name: Install AWS CLI
+  hosts: jenkins
+  become: yes
+  tasks:
+    - name: Download AWS CLI installation script
+      get_url:
+        url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+        dest: /tmp/awscli-exe-linux-x86_64.zip
+
+    - name: Unzip AWS CLI installation script
+      unarchive:
+        src: /tmp/awscli-exe-linux-x86_64.zip
+        dest: /tmp
+        remote_src: yes
+
+    - name: Install AWS CLI
+      command: /tmp/aws/install
+
+    - name: Ensure AWS CLI is installed
+      command: aws --version
+      register: aws_version
+
+    - name: Print AWS CLI version
+      debug:
+        msg: "AWS CLI version: {{ aws_version.stdout }}"

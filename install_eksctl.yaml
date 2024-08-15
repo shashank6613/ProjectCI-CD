@@ -1,0 +1,26 @@
+---
+ - name: Install eksctl
+   hosts: jenkins
+   become: yes
+   tasks:
+     - name: Download eksctl binary
+       get_url:
+         url: https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_linux_amd64.tar.gz
+         dest: /tmp/eksctl_linux_amd64.tar.gz
+
+     - name: Extract eksctl binary
+       unarchive:
+         src: /tmp/eksctl_linux_amd64.tar.gz
+         dest: /usr/local/bin
+         remote_src: yes
+
+     - name: Ensure eksctl is executable
+       command: chmod +x /usr/local/bin/eksctl
+
+     - name: Ensure eksctl is installed
+       command: eksctl version
+       register: eksctl_version
+
+     - name: Print eksctl version
+       debug:
+         msg: "eksctl version: {{ eksctl_version.stdout }}"
