@@ -28,31 +28,31 @@ sudo apt install python3-pip -y
 echo "**********INSTALLING UNZIP**********"
 sudo apt install unzip -y
 
-echo "**********INSTALLING AWS-CLI**********"
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
-sudo ./aws/install
+#echo "**********INSTALLING AWS-CLI**********"
+#curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+#unzip awscliv2.zip
+#sudo ./aws/install
 
-echo "**********INSTALLING TAR**********"
-sudo apt-get install tar -y
+#echo "**********INSTALLING TAR**********"
+#sudo apt-get install tar -y
 
-echo "**********INSTALLING EKSCTL**********"
- curl -sLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz"
-curl -sL "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_checksums.txt" | grep $(uname -s)_amd64 | sha256sum --check
-tar -xzf eksctl_$(uname -s)_amd64.tar.gz -C /tmp && rm eksctl_$(uname -s)_amd64.tar.gz
-sudo mv /tmp/eksctl /usr/local/bin
+#echo "**********INSTALLING EKSCTL**********"
+#curl -sLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz"
+#curl -sL "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_checksums.txt" | grep $(uname -s)_amd64 | sha256sum --check
+#tar -xzf eksctl_$(uname -s)_amd64.tar.gz -C /tmp && rm eksctl_$(uname -s)_amd64.tar.gz
+#sudo mv /tmp/eksctl /usr/local/bin
 
-echo "**********INSTALLING KUBECTL**********"
-snap install kubectl --classic
-kubectl version --client
-echo "THIS PACKAGE INSTALLED JAVA , PYTHON3, CURL, DOCKER, PIP, UNZIP, AWSCLI, EKSTCL, AND KUBECTL"
+#echo "**********INSTALLING KUBECTL**********"
+#snap install kubectl --classic
+#kubectl version --client
+#echo "THIS PACKAGE INSTALLED JAVA , PYTHON3, CURL, DOCKER, PIP, UNZIP, AWSCLI, EKSTCL, AND KUBECTL"
 
-echo "JAVA $(java --version)
+echo "JAVA $(java --version)"
 echo "PYTHON3 $(python3 --version)"
 echo "CURL $(curl --version)"
 echo "DOCKER $(docker --version)"
 echo "PIP $(pip --version)"
-echo "AWS-CLI $(aws --version)"
-echo "KUBECTL $(kubectl version --client)"
-echo "EKSCTL $(eksctl version)"
+#echo "AWS-CLI $(aws --version)"
+#echo "KUBECTL $(kubectl version --client)"
+#echo "EKSCTL $(eksctl version)"
 
