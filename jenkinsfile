@@ -9,6 +9,12 @@ pipeline {
         ANSIBLE_INVENTORY = 'inventory.ini'
     }
     stages {
+        stage('Checkout Code') {
+            steps {
+                // Checkout the code from your Git repository
+                git 'https://github.com/shashank6613/ProjectCI-CD.git'
+            }
+        }
         stage('Setup Environment') {
             steps {
                 script {
@@ -32,12 +38,6 @@ pipeline {
                         sh "ansible-playbook -i ${ANSIBLE_INVENTORY} ${playbook}"
                     }
                 }
-            }
-        }
-        stage('Checkout Code') {
-            steps {
-                // Checkout the code from your Git repository
-                git 'https://github.com/shashank6613/ProjectCI-CD.git'
             }
         }
         stage('Create EKS Cluster') {
