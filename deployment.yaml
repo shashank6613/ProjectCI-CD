@@ -14,6 +14,7 @@ spec:
     spec:
       containers: 
         - name: my-app
-          image: your-ecr-repo-uri/my-app:latest
+          image: shashank9928/my-app:latest
+          imagePullPolicy: IfNotPresent  
           ports:
            - containerPort: 80
