@@ -14,9 +14,6 @@ spec:
     spec:
       containers: 
         - name: my-app
-          image: shashank9928/my-app:latest
-          imagePullPolicy: IfNotPresent  
+          image: shashank9928/my-app:latest  
           ports:
-           - containerPort: 80
-      imagePullSecrets:
-         - name: cicd-secret       
+           - containerPort: 80       
