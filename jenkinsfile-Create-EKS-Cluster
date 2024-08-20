@@ -12,21 +12,19 @@ pipeline {
         stage('Setup Environment') {
             steps {
                 script {
+                     // Install Ansible (if not already installed)
+                     sh '''
+                         if ! command -v ansible &> /dev/null
+                         then
+                             pip install ansible
+                         fi
+                     '''
                     // Define the Ansible playbooks
                     def ansiblePlaybooks = [
                         'install_awscli.yaml',
                         'install_eksctl.yaml',
                         'install_kubectl.yaml'
                     ]
-
-                    // Install Ansible (if not already installed)
-                    sh '''
-                        if ! command -v ansible &> /dev/null
-                        then
-                            pip install ansible
-                        fi
-                    '''
-
                     // Execute the Ansible playbooks
                     for (playbook in ansiblePlaybooks) {
                         sh "ansible-playbook -i ${ANSIBLE_INVENTORY} ${playbook}"
