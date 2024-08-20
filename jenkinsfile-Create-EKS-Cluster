@@ -5,9 +5,35 @@ pipeline {
         AWS_CREDENTIALS_ID = 'aws-creds'
         CLUSTER_NAME = 'my-cluster'
         REGION = 'us-east-1'
+        ANSIBLE_INVENTORY = 'inventory.ini'
     }
 
     stages {
+        stage('Setup Environment') {
+            steps {
+                script {
+                    // Define the Ansible playbooks
+                    def ansiblePlaybooks = [
+                        'install_awscli.yaml',
+                        'install_eksctl.yaml',
+                        'install_kubectl.yaml'
+                    ]
+
+                    // Install Ansible (if not already installed)
+                    sh '''
+                        if ! command -v ansible &> /dev/null
+                        then
+                            pip install ansible
+                        fi
+                    '''
+
+                    // Execute the Ansible playbooks
+                    for (playbook in ansiblePlaybooks) {
+                        sh "ansible-playbook -i ${ANSIBLE_INVENTORY} ${playbook}"
+                    }
+                }
+            }
+        }
         stage('Create EKS Cluster') {
             steps {
                 withAWS(credentials: "${AWS_CREDENTIALS_ID}", region: "${REGION}") {
