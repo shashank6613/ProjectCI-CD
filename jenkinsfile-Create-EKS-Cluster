@@ -6,9 +6,20 @@ pipeline {
         CLUSTER_NAME = 'my-cluster'
         REGION = 'us-east-1'
         ANSIBLE_INVENTORY = 'inventory.ini'
+        GIT_CREDENTIALS_ID = 'git-creds'
     }
 
     stages {
+        stage('Checkout Code') {
+            steps {
+                // Checkout the code from your Git repository
+                git( 
+                    url: 'https://github.com/shashank6613/ProjectCI-CD.git',
+                    branch: 'main',
+                    credentialsId: "${GIT_CREDENTIALS_ID}"
+                )
+            }
+        }
         stage('Setup Environment') {
             steps {
                 script {
