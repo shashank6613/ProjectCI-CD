@@ -58,7 +58,7 @@ pipeline {
     post {
         success {
             // Trigger the deployment pipeline
-            build job: 'jenkinsfile-Deploy-To-Cluster', wait: true, parameters: [
+            build job: 'jenkinsfile-Deploy-OnEKS-Cluster', wait: true, parameters: [
                 string(name: 'CLUSTER_NAME', value: CLUSTER_NAME),
                 string(name: 'REGION', value: REGION)
             ]
