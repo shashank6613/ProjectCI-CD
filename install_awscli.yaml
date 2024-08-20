@@ -1,6 +1,6 @@
 ---
 - name: Install AWS CLI
-  hosts: jenkins
+  hosts: Agent
   become: yes
   tasks:
     - name: Download AWS CLI installation script
