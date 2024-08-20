@@ -27,7 +27,11 @@ pipeline {
                      sh '''
                          if ! command -v ansible &> /dev/null
                          then
-                             pip install ansible
+                             sudo yum update -y
+                             sudo yum install -y epel-release
+                             sudo yum install -y ansible
+                         else
+                             echo "Ansible is already installed."
                          fi
                      '''
                     // Define the Ansible playbooks
