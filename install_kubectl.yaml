@@ -17,4 +17,4 @@
 
     - name: Print kubectl version
       debug:
-      msg: "kubectl version: {{ kubectl_version.stdout }}"
+        msg: "kubectl version: {{ kubectl_version.stdout }}"
