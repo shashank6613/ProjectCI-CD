@@ -55,7 +55,7 @@ pipeline {
                         '''
 
                         // Define the Docker image name with the latest tag
-                        def dockerImage = "${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
+                        def dockerImage = "${DOCKER_IMAGE_NAME}:${env.DOCKER_IMAGE_TAG}"
 
                         // Update the Kubernetes deployment file with the new Docker image name
                         sh """
