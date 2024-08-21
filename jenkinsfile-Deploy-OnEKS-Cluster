@@ -19,7 +19,11 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 // Checkout the code from your Git repository
-                git credentialsId: "${GIT_CREDENTIALS_ID}", url: 'https://github.com/shashank6613/ProjectCI-CD.git'
+                git( 
+                    url: 'https://github.com/shashank6613/ProjectCI-CD.git',
+                    branch: 'main',
+                    credentialsId: "${GIT_CREDENTIALS_ID}"
+                )
             }
         }
 
