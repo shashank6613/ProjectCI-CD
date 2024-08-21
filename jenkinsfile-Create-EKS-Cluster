@@ -5,48 +5,9 @@ pipeline {
         AWS_CREDENTIALS_ID = 'aws-creds'
         CLUSTER_NAME = 'my-cluster'
         REGION = 'us-east-1'
-        ANSIBLE_INVENTORY = 'inventory.ini'
-        GIT_CREDENTIALS_ID = 'git-creds'
     }
 
     stages {
-        stage('Checkout Code') {
-            steps {
-                // Checkout the code from your Git repository
-                git( 
-                    url: 'https://github.com/shashank6613/ProjectCI-CD.git',
-                    branch: 'main',
-                    credentialsId: "${GIT_CREDENTIALS_ID}"
-                )
-            }
-        }
-        stage('Setup Environment') {
-            steps {
-                script {
-                     // Install Ansible (if not already installed)
-                     sh '''
-                         if ! command -v ansible &> /dev/null
-                         then
-                             sudo yum update -y
-                             sudo yum install -y epel-release
-                             sudo yum install -y ansible
-                         else
-                             echo "Ansible is already installed."
-                         fi
-                     '''
-                    // Define the Ansible playbooks
-                    def ansiblePlaybooks = [
-                        'install_awscli.yaml',
-                        'install_eksctl.yaml',
-                        'install_kubectl.yaml'
-                    ]
-                    // Execute the Ansible playbooks
-                    for (playbook in ansiblePlaybooks) {
-                        sh "ansible-playbook -i ${ANSIBLE_INVENTORY} ${playbook}"
-                    }
-                }
-            }
-        }
         stage('Create EKS Cluster') {
             steps {
                 withAWS(credentials: "${AWS_CREDENTIALS_ID}", region: "${REGION}") {
