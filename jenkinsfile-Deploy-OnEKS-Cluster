@@ -43,7 +43,7 @@ pipeline {
 
         stage('Push Docker Image') {
             steps {
-                withDockerRegistry([credentialsId: "${DOCKER_CREDENTIAL_ID}", url: 'https://index.docker.io/v1/']) {
+                docker.withRegistry('https://index.docker.io/v1/', "${DOCKER_CREDENTIAL_ID}") {
                     script {
                         docker.image("${DOCKER_IMAGE_NAME}:${env.DOCKER_IMAGE_TAG}").push('latest')
                     }
