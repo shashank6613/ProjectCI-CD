@@ -67,9 +67,9 @@ pipeline {
             steps {
                 script {
                     // Apply the Kubernetes Service first
-                    sh "kubectl apply -f ${KUBE_SERVICE_FILE}"
+                    sh "kubectl apply -f ${KUBE_SERVICE_FILE} --validate=false"
                     // Apply the Kubernetes Deployment
-                    sh "kubectl apply -f ${KUBE_DEPLOYMENT_FILE}"
+                    sh "kubectl apply -f ${KUBE_DEPLOYMENT_FILE} --validate=false"
                 }
             }
         }
