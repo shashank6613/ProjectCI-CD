@@ -1,28 +1,26 @@
 pipeline {
-    agent any {
-        any,   
-        docker {
-            args '--user root -v /var/run/docker.sock:/var/run/docker.sock' // mount Docker socket to access the host's Docker daemon
-        }
-    environment {
-        AWS_CREDENTIALS_ID = 'aws-creds'
-        DOCKER_CREDENTIAL_ID = 'dock-creds'
-        DOCKER_IMAGE= 'shashank9928/my-app'
-        KUBE_DEPLOYMENT_FILE = 'deployment.yaml'
-        KUBE_SERVICE_FILE = 'service.yaml'
-        GIT_CREDENTIALS_ID = 'git-creds'
-        DOCKER_IMAGE_TAG = '${BUILD_NUMBER}'
-    }
+    agent any
 
-    parameters {
-        string(name: 'CLUSTER_NAME', defaultValue: '', description: 'Name of the EKS Cluster')
-        string(name: 'REGION', defaultValue: 'us-east-1', description: 'AWS Region')
+    environment {
+        DOCKER_IMAGE_NAME = 'shashank9928/my-app'
+        DOCKER_IMAGE_TAG = 'latest'
+        DOCKER_REGISTRY = 'docker.io' // Default Docker Hub
+        DOCKER_REGISTRY_CREDENTIALS = 'dock-creds' // Jenkins credentials ID for Docker Hub
+        AWS_CREDENTIALS_ID = 'aws-creds'
+        AWS_REGION = 'us-east-1' // Replace with your AWS region
+        GIT_CREDENTIALS_ID = 'git-creds'
+        CLUSTER_NAME = 'my-cluster' // Replace with your EKS cluster name
+        KUBE_DEPLOYMENT_FILE = 'deployment.yaml' // Path to your Kubernetes deployment file in the workspace
+        KUBE_SERVICE_FILE = 'service.yaml' // Path to your Kubernetes service file in the workspace
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('Checkout Source Code') {
             steps {
-                // Checkout the code from your Git repository
+                script {
+                    sh 'git init'
+                    sh 'git remote set-url origin https://github.com/your-repo/your-repo.git'
+                }
                 git( 
                     url: 'https://github.com/shashank6613/ProjectCI-CD.git',
                     branch: 'main',
@@ -30,78 +28,97 @@ pipeline {
                 )
             }
         }
-
-        stage('Build and Push Docker Image') {
-           steps {
-               script {
-                   sh """docker build -t ${DOCKER_IMAGE} ."""
-                   def dockerImage = docker.image("${DOCKER_IMAGE}")
-                   docker.withRegistry('https://index.docker.io/v1/', "dock-creds") {
-                   dockerImage.push()
-                   }
-                }
-            }
-        }  
-        stage('Update kubeconfig') {
+        stage('Create EKS Cluster') {
             steps {
-                withAWS(credentials: "${AWS_CREDENTIALS_ID}", region: "${params.REGION}") {
+                withAWS(credentials: "${AWS_CREDENTIALS_ID}", region: "${REGION}") {
                     script {
-                        def region = params.REGION
-                        def cluster = params.CLUSTER_NAME
-                        sh """
-                            aws eks update-kubeconfig --region ${region} --name ${cluster}
-                        """
-
-                        // Define the Docker image name with the latest tag
-                        def dockerImage = "${DOCKER_IMAGE}:${BUILD_NUMBER}"
-
-                        // Update the Kubernetes deployment file with the new Docker image name
-                        sh """
-                            sed -i 's|image: .*|image: ${dockerImage}|' ${KUBE_DEPLOYMENT_FILE}
-                        """
+                        sh '''
+                            # Create EKS Cluster
+                            eksctl create cluster \
+                                --name ${CLUSTER_NAME} \
+                                --version 1.30 \
+                                --region ${REGION} \
+                                --nodegroup-name standard-workers \
+                                --node-type t3.medium \
+                                --nodes 1 \
+                                --nodes-min 1 \
+                                --nodes-max 1 \
+                                --managed
+                        '''
                     }
                 }
             }
         }
-
-        stage('Deploy to EKS') {
+        stage('Build Docker Image') {
             steps {
                 script {
-                    // Apply the Kubernetes Service first
-                    sh "kubectl apply -f ${KUBE_SERVICE_FILE}"
-                    // Apply the Kubernetes Deployment
+                    // Define the Docker image name with the latest tag
+                    def dockerImage = "${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
+                    
+                    // Print the Docker image name for debugging
+                    echo "Building Docker image: ${dockerImage}"
+                    
+                    // Build the Docker image
+                    sh "docker build -t ${dockerImage} ."
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    // Define the Docker image name with the latest tag
+                    def dockerImage = "${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
+                    
+                    // Print the Docker image name for debugging
+                    echo "Pushing Docker image: ${dockerImage}"
+                    
+                    // Login to Docker Hub
+                    withCredentials([usernamePassword(credentialsId: "${DOCKER_REGISTRY_CREDENTIALS}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh "echo $DOCKER_PASSWORD | docker login ${DOCKER_REGISTRY} -u $DOCKER_USERNAME --password-stdin"
+                    }
+
+                    // Push the Docker image to Docker Hub
+                    sh "docker push ${dockerImage}"
+                }
+            }
+        }
+
+        stage('Update Kubernetes Deployment') {
+            steps {
+                script {
+                    // Update kubeconfig to use the EKS cluster
+                    sh "aws eks --region ${AWS_REGION} update-kubeconfig --name ${CLUSTER_NAME}"
+
+                    // Define the Docker image name with the latest tag
+                    def dockerImage = "${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
+                    
+                    // Update the Kubernetes deployment file with the new Docker image name
+                    sh """
+                        sed -i 's|image: .*|image: ${dockerImage}|' ${KUBE_DEPLOYMENT_FILE}
+                    """
+                    
+                    // Apply the updated Kubernetes deployment file
                     sh "kubectl apply -f ${KUBE_DEPLOYMENT_FILE}"
+                }
+            }
+        }
+
+        stage('Update Kubernetes Service') {
+            steps {
+                script {
+                    // Apply the updated Kubernetes service file
+                    sh "kubectl apply -f ${KUBE_SERVICE_FILE}"
                 }
             }
         }
     }
 
     post {
-        failure {
-            // Optional: Clean up resources if needed
-            withAWS(credentials: "${AWS_CREDENTIALS_ID}", region: "${params.REGION}") {
-                script {
-                    // Define dynamic Docker image tag
-                    def dockerImageTag = "${BUILD_NUMBER}"
-
-                    // Stop and remove Docker containers (if any are running)
-                    sh """
-                        docker ps -q --filter "ancestor=${DOCKER_IMAGE}:${dockerImageTag}" | xargs -r docker stop
-                        docker ps -a -q --filter "ancestor=${DOCKER_IMAGE}:${dockerImageTag}" | xargs -r docker rm
-                    """
-
-                    // Remove Docker image
-                    sh """
-                        docker rmi ${DOCKER_IMAGE}:${dockerImageTag} || true
-                    """
-                }
-            }
+        always {
+            // Clean up or notify based on the pipeline status
+            echo 'Pipeline execution completed.'
         }
-        success {
-            script {
-                echo "Pipeline successfully executed, You've done it Man!"
-            }
-        } 
     }
 }
-}
+
