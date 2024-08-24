@@ -1,0 +1,107 @@
+pipeline {
+    agent any {
+        docker {
+        args '--user root -v /var/run/docker.sock:/var/run/docker.sock' // mount Docker socket to access the host's Docker daemon
+      }
+    }
+
+    environment {
+        AWS_CREDENTIALS_ID = 'aws-creds'
+        DOCKER_CREDENTIAL_ID = 'dock-creds'
+        DOCKER_IMAGE= 'shashank9928/my-app'
+        KUBE_DEPLOYMENT_FILE = 'deployment.yaml'
+        KUBE_SERVICE_FILE = 'service.yaml'
+        GIT_CREDENTIALS_ID = 'git-creds'
+        DOCKER_IMAGE_TAG = '${BUILD_NUMBER}'
+    }
+
+    parameters {
+        string(name: 'CLUSTER_NAME', defaultValue: '', description: 'Name of the EKS Cluster')
+        string(name: 'REGION', defaultValue: 'us-east-1', description: 'AWS Region')
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                // Checkout the code from your Git repository
+                git( 
+                    url: 'https://github.com/shashank6613/ProjectCI-CD.git',
+                    branch: 'main',
+                    credentialsId: "${GIT_CREDENTIALS_ID}"
+                )
+            }
+        }
+
+        stage('Build and Push Docker Image') {
+           steps {
+               script {
+                   sh """docker build -t ${DOCKER_IMAGE} ."""
+                   def dockerImage = docker.image("${DOCKER_IMAGE}")
+                   docker.withRegistry('https://index.docker.io/v1/', "dock-creds") {
+                   dockerImage.push()
+                   }
+                }
+            }
+        }  
+        stage('Update kubeconfig') {
+            steps {
+                withAWS(credentials: "${AWS_CREDENTIALS_ID}", region: "${params.REGION}") {
+                    script {
+                        def region = params.REGION
+                        def cluster = params.CLUSTER_NAME
+                        sh """
+                            aws eks update-kubeconfig --region ${region} --name ${cluster}
+                        """
+
+                        // Define the Docker image name with the latest tag
+                        def dockerImage = "${DOCKER_IMAGE}:${BUILD_NUMBER}"
+
+                        // Update the Kubernetes deployment file with the new Docker image name
+                        sh """
+                            sed -i 's|image: .*|image: ${dockerImage}|' ${KUBE_DEPLOYMENT_FILE}
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to EKS') {
+            steps {
+                script {
+                    // Apply the Kubernetes Service first
+                    sh "kubectl apply -f ${KUBE_SERVICE_FILE}"
+                    // Apply the Kubernetes Deployment
+                    sh "kubectl apply -f ${KUBE_DEPLOYMENT_FILE}"
+                }
+            }
+        }
+    }
+
+    post {
+        failure {
+            // Optional: Clean up resources if needed
+            withAWS(credentials: "${AWS_CREDENTIALS_ID}", region: "${params.REGION}") {
+                script {
+                    // Define dynamic Docker image tag
+                    def dockerImageTag = "${BUILD_NUMBER}"
+
+                    // Stop and remove Docker containers (if any are running)
+                    sh """
+                        docker ps -q --filter "ancestor=${DOCKER_IMAGE}:${dockerImageTag}" | xargs -r docker stop
+                        docker ps -a -q --filter "ancestor=${DOCKER_IMAGE}:${dockerImageTag}" | xargs -r docker rm
+                    """
+
+                    // Remove Docker image
+                    sh """
+                        docker rmi ${DOCKER_IMAGE}:${dockerImageTag} || true
+                    """
+                }
+            }
+        }
+        success {
+            script {
+                echo "Pipeline successfully executed, You've done it Man!"
+            }
+        } 
+    }
+}
