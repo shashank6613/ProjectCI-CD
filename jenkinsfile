@@ -7,7 +7,7 @@ pipeline {
         DOCKER_REGISTRY = 'docker.io' // Default Docker Hub
         DOCKER_REGISTRY_CREDENTIALS = 'dock-creds' // Jenkins credentials ID for Docker Hub
         AWS_CREDENTIALS_ID = 'aws-creds'
-        AWS_REGION = 'us-east-1' // Replace with your AWS region
+        REGION = 'us-east-1' // Replace with your AWS region
         GIT_CREDENTIALS_ID = 'git-creds'
         CLUSTER_NAME = 'my-cluster' // Replace with your EKS cluster name
         KUBE_DEPLOYMENT_FILE = 'deployment.yaml' // Path to your Kubernetes deployment file in the workspace
@@ -84,7 +84,7 @@ pipeline {
             steps {
                 script {
                     // Update kubeconfig to use the EKS cluster
-                    sh "aws eks --region ${AWS_REGION} update-kubeconfig --name ${CLUSTER_NAME}"
+                    sh "aws eks --region ${REGION} update-kubeconfig --name ${CLUSTER_NAME}"
 
                     // Define the Docker image name with the latest tag
                     def dockerImage = "${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
